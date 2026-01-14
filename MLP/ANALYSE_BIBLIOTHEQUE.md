@@ -2,12 +2,11 @@
 
 ## 1. Interface `TransferFunction`
 
-**Rôle** : Définit le contrat pour les fonctions d'activation du réseau.
 
 | Méthode | Entrée | Sortie | Description |
 |---------|--------|--------|-------------|
 | `evaluate(double value)` | `double` - valeur brute | `double` - valeur activée | Applique la fonction de transfert |
-| `evaluateDer(double value)` | `double` - **résultat de σ(x)** | `double` - dérivée | Calcule la dérivée (⚠️ reçoit σ(x), pas x) |
+| `evaluateDer(double value)` | `double` - **résultat de σ(x)** | `double` - dérivée | Calcule la dérivée |
 
 ---
 
@@ -43,7 +42,7 @@ public double[] execute(double[] input)
 ```
 
 ### Rôle
-**Propagation avant** (forward propagation) : calcule la sortie du réseau pour une entrée donnée.
+**Propagation avant** : calcule la sortie du réseau pour une entrée donnée.
 
 ### Entrée
 
@@ -83,22 +82,26 @@ public double backPropagate(double[] input, double[] output)
 | `output` | `double[]` | Sortie souhaitée (étiquette/label) |
 
 ### Algorithme
-1. **Forward pass** : exécute `execute(input)` pour obtenir la sortie actuelle
+1. **Forward pass** : exécute `execute(input)` pour obtenir la sortie actuelle (`new_output`)
 2. **Calcul des deltas de sortie** :
    - `erreur = sortie_souhaitée - sortie_calculée`
    - `delta = erreur × σ'(sortie_calculée)`
-3. **Rétropropagation des deltas** (couches cachées) :
+3. **Rétropropagation des deltas** (couches cachées, de la fin vers le début) :
    - `erreur = Σ(delta_suivant × poids)`
    - `delta = erreur × σ'(valeur_neurone)`
 4. **Mise à jour des poids** :
    - `poids += η × delta × valeur_précédente`
    - `biais -= η × delta`
+5. **Calcul et retour de l'erreur moyenne** :
+   - `erreur_totale = Σ|sortie_souhaitée[i] - sortie_calculée[i]|`
+   - `erreur_moyenne = erreur_totale / nombre_sorties`
+   - **Retourne** cette erreur moyenne absolue
 
 ### Sortie
 
 | Type | Description |
 |------|-------------|
-| `double` | Erreur moyenne absolue : `Σ|sortie_souhaitée - sortie_calculée| / nb_sorties` |
+| `double` | **Erreur moyenne absolue** : moyenne des différences absolues entre chaque sortie souhaitée et calculée. Cette valeur diminue au cours de l'apprentissage et permet de suivre la convergence du réseau. |
 
 ---
 
@@ -131,14 +134,4 @@ public double backPropagate(double[] input, double[] output)
 | Méthode | Type retour | Signification |
 |---------|-------------|---------------|
 | `execute()` | `double[]` | Prédiction du réseau |
-| `backPropagate()` | `double` | Erreur d'apprentissage |
-
----
-
-## 7. Point Important : Dérivée de la fonction de transfert
-
-> ⚠️ **ATTENTION** : La méthode `evaluateDer(value)` reçoit **σ(x)** (le résultat de la fonction), **pas x** lui-même !
-
-Cela signifie que les dérivées doivent être exprimées en fonction de σ :
-- **Sigmoïde** : `σ'(σ) = σ × (1 - σ)`
-- **Tanh** : `σ'(σ) = 1 - σ²`
+| `backPropagate()` | `double` | Erreur moyenne d'apprentissage |
