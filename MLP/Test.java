@@ -31,15 +31,13 @@ public class Test {
 
     // Paramètres d'apprentissage
     static int nombreEpoquesMax = 10000;
-    static double tauxApprentissage = 0.5;
+    static double tauxApprentissage = 0.5; // Valeur par défaut
     static double seuilErreur = 0.01;
 
     public static void main(String[] args) {
         if (args.length == 0) {
-            // Mode par défaut : tous les tests
-            testsComplets();
+            testsComplets(); // Utilise les valeurs par défaut
         } else {
-            // Mode paramétré
             testParametre(args);
         }
     }
@@ -57,23 +55,62 @@ public class Test {
     }
 
     /**
-     * Mode paramétré par ligne de commande
+     * Mode paramétré par ligne de commande (Arguments positionnels)
+     * args[0] = architecture (ex: "2,4,1")
+     * args[1] = fonction ("sigmoid" ou "tanh")
+     * args[2] = porte ("ET", "OU", "XOR")
+     * args[3] = taux d'apprentissage (double) -> NOUVEAU
+     * args[4...] = options ("2d", "melange")
      */
     static void testParametre(String[] args) {
-        // args[0] = architecture (ex: "2,4,1")
-        // args[1] = fonction ("sigmoid" ou "tanh")
-        // args[2] = porte ("ET", "OU", "XOR")
-        // args[3] = optionnel: "2d" ou "melange"
+        if (args.length < 3) {
+            System.out.println("Usage: java Test <architecture> <fonction> <porte> <taux> [2d] [melange]");
+            return;
+        }
 
+        // 1. Architecture
         int[] architecture = parseArchitecture(args[0]);
 
-        TransferFunction fonction = args[1].equalsIgnoreCase("tanh") ? new Tanh() : new Sigmoid();
-        String nomFonction = args[1].equalsIgnoreCase("tanh") ? "Tanh" : "Sigmoid";
+        // 2. Fonction de transfert
+        TransferFunction fonction;
+        String nomFonction = args[1].toLowerCase();
+        if (nomFonction.equals("tanh")) {
+            fonction = new Tanh();
+            nomFonction = "Tanh";
+        } else {
+            fonction = new Sigmoid();
+            nomFonction = "Sigmoid";
+        }
 
+        // 3. Porte logique
         String porte = args[2].toUpperCase();
 
-        boolean mode2D = args.length > 3 && args[3].equalsIgnoreCase("2d");
-        boolean melange = args.length > 3 && args[3].equalsIgnoreCase("melange");
+        // 4. Taux d'apprentissage (Optionnel, défaut 0.5 si non précisé ou pas un
+        // nombre)
+        double taux = tauxApprentissage;
+        int startIndexOptions = 3;
+
+        if (args.length > 3) {
+            try {
+                taux = Double.parseDouble(args[3]);
+                startIndexOptions = 4; // Les options commencent après le taux
+            } catch (NumberFormatException e) {
+                // Ce n'est pas un nombre, donc c'est peut-être une option
+                startIndexOptions = 3;
+            }
+        }
+
+        // 5. Options
+        boolean mode2D = false;
+        boolean melange = false;
+
+        for (int i = startIndexOptions; i < args.length; i++) {
+            String opt = args[i].toLowerCase();
+            if (opt.equals("2d"))
+                mode2D = true;
+            if (opt.equals("melange") || opt.equals("shuffle"))
+                melange = true;
+        }
 
         // Obtenir les sorties appropriées
         double[][] sorties = getSorties(porte, mode2D);
@@ -83,16 +120,13 @@ public class Test {
         System.out.println("Architecture: " + architectureToString(architecture));
         System.out.println("Fonction: " + nomFonction);
         System.out.println("Porte: " + porte);
+        System.out.println("Taux: " + taux);
         System.out.println("Mode 2D: " + mode2D);
         System.out.println("Melange: " + melange);
-        System.out.println();
 
-        // Exécuter le test
-        if (melange) {
-            testerPorteMelange(porte, entrees, sorties, architecture, fonction);
-        } else {
-            testerPorte(porte, entrees, sorties, architecture, fonction);
-        }
+        // Exécuter le test avec le taux spécifié
+        MLP mlp = new MLP(architecture, taux, fonction);
+        testerPorteGenerique(mlp, entrees, sorties, porte, melange);
     }
 
     /**
@@ -170,59 +204,27 @@ public class Test {
     }
 
     /**
-     * Test d'une porte logique
+     * Méthode générique pour exécuter le test
      */
-    static void testerPorte(String nomPorte, double[][] entrees, double[][] sorties,
-            int[] architecture, TransferFunction fonction) {
-        MLP mlp = new MLP(architecture, tauxApprentissage, fonction);
-
+    static void testerPorteGenerique(MLP mlp, double[][] entrees, double[][] sorties, String nomPorte,
+            boolean melange) {
         int epoque = 0;
         double erreur = 1.0;
         boolean convergence = false;
 
+        // Tableau d'indices pour le mélange
+        int[] indices = new int[entrees.length];
+        for (int i = 0; i < entrees.length; i++)
+            indices[i] = i;
+
         while (epoque < nombreEpoquesMax && !convergence) {
+            if (melange)
+                melangerTableau(indices);
+
             erreur = 0;
             for (int i = 0; i < entrees.length; i++) {
-                erreur += mlp.backPropagate(entrees[i], sorties[i]);
-            }
-            erreur /= entrees.length;
-
-            if (erreur < seuilErreur) {
-                convergence = true;
-            }
-            epoque++;
-        }
-
-        int reussis = 0;
-        for (int i = 0; i < entrees.length; i++) {
-            double[] resultat = mlp.execute(entrees[i]);
-            if (estCorrect(resultat, sorties[i])) {
-                reussis++;
-            }
-        }
-
-        String statut = (reussis == entrees.length) ? "OK" : "ECHEC";
-        System.out.printf("%s: %d/%d reussis, %d epoques, erreur=%.4f [%s]%n",
-                nomPorte, reussis, entrees.length, epoque, erreur, statut);
-    }
-
-    /**
-     * Test avec données mélangées
-     */
-    static void testerPorteMelange(String nomPorte, double[][] entrees, double[][] sorties,
-            int[] architecture, TransferFunction fonction) {
-        MLP mlp = new MLP(architecture, tauxApprentissage, fonction);
-
-        int[] indices = { 0, 1, 2, 3 };
-        int epoque = 0;
-        double erreur = 1.0;
-        boolean convergence = false;
-
-        while (epoque < nombreEpoquesMax && !convergence) {
-            melangerTableau(indices);
-
-            erreur = 0;
-            for (int idx : indices) {
+                // Si mélange, on prend l'indice mélangé, sinon l'indice i
+                int idx = melange ? indices[i] : i;
                 erreur += mlp.backPropagate(entrees[idx], sorties[idx]);
             }
             erreur /= entrees.length;
@@ -241,9 +243,28 @@ public class Test {
             }
         }
 
+        String suffixe = melange ? " (melange)" : "";
         String statut = (reussis == entrees.length) ? "OK" : "ECHEC";
-        System.out.printf("%s (melange): %d/%d reussis, %d epoques, erreur=%.4f [%s]%n",
-                nomPorte, reussis, entrees.length, epoque, erreur, statut);
+        System.out.printf("%s%s: %d/%d reussis, %d epoques, erreur=%.4f [%s]%n",
+                nomPorte, suffixe, reussis, entrees.length, epoque, erreur, statut);
+    }
+
+    /**
+     * Wrapper pour compatibilité (Appel standard)
+     */
+    static void testerPorte(String nomPorte, double[][] entrees, double[][] sorties,
+            int[] architecture, TransferFunction fonction) {
+        MLP mlp = new MLP(architecture, tauxApprentissage, fonction);
+        testerPorteGenerique(mlp, entrees, sorties, nomPorte, false);
+    }
+
+    /**
+     * Wrapper pour compatibilité (Appel mélangé)
+     */
+    static void testerPorteMelange(String nomPorte, double[][] entrees, double[][] sorties,
+            int[] architecture, TransferFunction fonction) {
+        MLP mlp = new MLP(architecture, tauxApprentissage, fonction);
+        testerPorteGenerique(mlp, entrees, sorties, nomPorte, true);
     }
 
     static boolean estCorrect(double[] resultat, double[] attendu) {
