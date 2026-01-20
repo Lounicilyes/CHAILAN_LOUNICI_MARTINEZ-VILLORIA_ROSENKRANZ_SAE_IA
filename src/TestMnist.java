@@ -15,16 +15,16 @@ public class TestMnist {
 
         // 1. PARAMÈTRES (A modifier pour vos analyses)
         // ---------------------------------------------
-        int tailleCoucheCachee = 50;  // Essayez 20, 50, 100...
-        double learningRate = 0.1;    // Essayez 0.01, 0.1, 0.5...
-        int nombreEpoques = 20;       // Nombre de passages complets
-        int maxImages = 0;            // 0 = tout charger (60000 images), mettez 5000 pour tester vite au début
+        int tailleCoucheCachee = 50; // Essayez 20, 50, 100...
+        double learningRate = 0.1; // Essayez 0.01, 0.1, 0.5...
+        int nombreEpoques = 20; // Nombre de passages complets
+        int maxImages = 0; // 0 = tout charger (60000 images), mettez 5000 pour tester vite au début
 
         // Chemins vers vos fichiers (ADAPTEZ CES CHEMINS SI BESOIN)
-        String trainImages = "src/data/train-images.idx3-ubyte";
-        String trainLabels = "src/data/train-labels.idx1-ubyte";
-        String testImages  = "src/data/t10k-images.idx3-ubyte";
-        String testLabels  = "src/data/t10k-labels.idx1-ubyte";
+        String trainImages = "data/train-images.idx3-ubyte";
+        String trainLabels = "data/train-labels.idx1-ubyte";
+        String testImages = "data/t10k-images.idx3-ubyte";
+        String testLabels = "data/t10k-labels.idx1-ubyte";
 
         try {
             // 2. CHARGEMENT DES DONNÉES (Via votre code existant)
@@ -150,7 +150,8 @@ public class TestMnist {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < arch.length; i++) {
             sb.append(arch[i]);
-            if (i < arch.length - 1) sb.append("-");
+            if (i < arch.length - 1)
+                sb.append("-");
         }
         sb.append("]");
         return sb.toString();
