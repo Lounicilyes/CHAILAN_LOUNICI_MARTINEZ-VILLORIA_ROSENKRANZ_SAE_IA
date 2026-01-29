@@ -13,6 +13,8 @@ public class TestKNN {
     public static void main(String[] args) {
         try {
             System.out.println("=".repeat(60));
+            // Reset CSV file
+            new java.io.File("resultats_knn.csv").delete();
             System.out.println("           TEST k-NN SUR MNIST");
             System.out.println("=".repeat(60));
 
@@ -37,6 +39,9 @@ public class TestKNN {
 
                 long timeMs = System.currentTimeMillis() - startTime;
                 System.out.printf("Précision = %.2f%% (temps: %dms)%n", precision * 100, timeMs);
+
+                // Sauvegarde CSV
+                saveToCSV(k, precision, timeMs);
             }
 
             System.out.println("\n" + "=".repeat(60));
@@ -66,6 +71,20 @@ public class TestKNN {
         } catch (IOException e) {
             System.err.println("Erreur: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private static void saveToCSV(int k, double precision, long timeMs) {
+        try (java.io.FileWriter fw = new java.io.FileWriter("resultats_knn.csv", true);
+                java.io.PrintWriter pw = new java.io.PrintWriter(fw)) {
+            // Write header if file is empty
+            java.io.File f = new java.io.File("resultats_knn.csv");
+            if (f.length() == 0) {
+                pw.println("K,Precision,TimeMs");
+            }
+            pw.printf("%d,%.4f,%d%n", k, precision, timeMs);
+        } catch (IOException e) {
+            System.err.println("Erreur sauvegarde CSV: " + e.getMessage());
         }
     }
 
