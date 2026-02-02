@@ -99,3 +99,32 @@ Les resultats sont presentes en **3 tableaux distincts** (ET, OU, XOR). La colon
 
 4. **Sortie 2D et Melange**
    L'utilisation de deux neurones de sortie (mode 2D) ou le melange des donnees ("shuffling") n'a pas d'impact critique sur la reussite, mais le melange peut aider a la convergence dans certains cas limites (evitement de minima locaux).
+
+## Comparaison KNN vs MLP (MNIST)
+
+En complément des tests sur le perceptron multicouche (MLP), une comparaison a été effectuée avec l'algorithme des k-plus proches voisins (k-NN) sur le même jeu de données (10 000 images d'entraînement, 1 000 images de test).
+
+### Résultats Comparatifs
+
+| Méthode | Paramètres | Précision (%) | Temps Prédiction (1000 img) | Temps Apprentissage |
+|---|---|---|---|---|
+| **k-NN** | k=1 | **92.00%** | ~4574 ms | 0 ms |
+| **k-NN** | k=3 | 91.90% | ~4769 ms | 0 ms |
+| **k-NN** | k=5 | 91.60% | ~4767 ms | 0 ms |
+| **k-NN** | k=7 | 91.60% | ~4825 ms | 0 ms |
+| **k-NN** | k=10 | 91.50% | ~4652 ms | 0 ms |
+| **MLP** | 784-128-10, Tanh, lr=0.5 | **94.80%** | < 50 ms (est.) | ~49584 ms |
+
+### Analyse et Conclusion
+
+1.  **Précision** :
+    *   Le **MLP (94.8%)** surpasse le k-NN (92.0%) de près de 3 points.
+    *   Le k-NN obtient toutefois un score très respectable sans aucun entraînement préalable, ce qui en fait une "baseline" solide.
+
+2.  **Performance (Temps)** :
+    *   **Apprentissage** : Le k-NN est instantané (Lazy Learning), tandis que le MLP nécessite environ 50 secondes d'entraînement pour atteindre sa performance optimale.
+    *   **Prédiction** : C'est ici que la différence est critique. Le MLP est **extrêmement rapide** en inférence (quelques millisecondes), alors que le k-NN est **très lent** (environ 4.5 secondes pour 1000 images), car il doit comparer chaque nouvelle image avec les 10 000 images d'entraînement.
+
+3.  **Bilan** :
+    *   Pour une application temps réel, le **MLP est clairement supérieur** grâce à sa vitesse de prédiction.
+    *   Le k-NN reste utile pour le prototypage rapide ou lorsque le coût d'entraînement est prohibitif, mais il passe difficilement à l'échelle sur de grands jeux de données sans optimisation (ex: KD-Trees).
