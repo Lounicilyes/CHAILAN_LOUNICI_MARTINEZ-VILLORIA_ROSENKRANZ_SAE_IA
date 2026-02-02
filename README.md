@@ -336,3 +336,5 @@ La documentation sera créée dans le dossier `doc/`. Ouvrez `doc/index.html` da
 ---
 
 *Projet réalisé dans le cadre de la SAE Intelligence Artificielle*
+
+Auteur Joey Rosenkranz
