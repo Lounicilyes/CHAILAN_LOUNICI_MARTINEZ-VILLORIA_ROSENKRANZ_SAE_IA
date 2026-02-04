@@ -1,0 +1,17 @@
+Configuration;Profondeur;MinMax_Etats;AlphaBeta_Etats;Reduction_Pourcent
+3x3_align3_D2;2;26;8;69,23
+3x3_align3_D3;3;2;14;-600,00
+3x3_align3_D4;4;122;2;98,36
+3x3_align3_D5;5;14;24;-71,43
+4x4_align3_D2;2;145;145;0,00
+4x4_align3_D3;3;1255;1355;-7,97
+4x4_align3_D4;4;10895;9841;9,67
+4x4_align3_D5;5;79751;60100;24,64
+4x4_align4_D2;2;101;42;58,42
+4x4_align4_D3;3;685;749;-9,34
+4x4_align4_D4;4;4325;4781;-10,54
+4x4_align4_D5;5;28469;27797;2,36
+5x5_align4_D2;2;362;362;0,00
+5x5_align4_D3;3;5870;5870;0,00
+5x5_align4_D4;4;4962;89102;-1695,69
+5x5_align4_D5;5;1330382;1323182;0,54

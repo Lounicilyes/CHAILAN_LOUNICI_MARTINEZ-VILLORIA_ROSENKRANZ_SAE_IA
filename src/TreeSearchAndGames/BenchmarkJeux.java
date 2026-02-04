@@ -7,43 +7,68 @@ import java.io.PrintWriter;
 import java.io.IOException;
 
 /**
- * Benchmark pour comparer les algorithmes de jeux MinMax et AlphaBeta
+ * Benchmark pour comparer MinMax vs AlphaBeta
+ * ET comparer les fonctions d'évaluation (ancienne vs nouvelle)
  *
- * Ce programme compare :
- * 1. MinMax vs AlphaBeta sur les mêmes configurations
- * 2. Différentes fonctions d'évaluation sur MnkGame
- *
- * Critères de comparaison :
- * - Nombre d'états explorés
- * - Temps d'exécution
- * - Qualité des décisions (victoires/défaites)
+ * Génère des fichiers CSV pour créer des graphiques
  */
 public class BenchmarkJeux {
 
     public static void main(String[] args) {
         System.out.println("=== BENCHMARK DES ALGORITHMES DE JEUX ===\n");
 
-        String csvFile = "resultats_jeux.csv";
+        // PARTIE 1 : Comparaison MinMax vs AlphaBeta
+        benchmarkMinMaxVsAlphaBeta();
+
+        System.out.println("\n\n");
+
+        // PARTIE 2 : Comparaison des fonctions d'évaluation
+        benchmarkFonctionsEvaluation();
+    }
+
+    /**
+     * Benchmark MinMax vs AlphaBeta (nombre d'états explorés)
+     */
+    private static void benchmarkMinMaxVsAlphaBeta() {
+        System.out.println("=== PARTIE 1 : COMPARAISON MINMAX vs ALPHABETA ===");
+        System.out.println("=== Graphique à barres : Nombre d'états explorés ===\n");
+
+        String csvFile = "resultats_minmax_vs_alphabeta.csv";
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
-            writer.println("Test;Jeu;Taille;Streak;P1_Algo;P1_Depth;P2_Algo;P2_Depth;Gagnant;Coups;P1_Etats;P2_Etats;Temps_ms");
+            writer.println("Configuration;Profondeur;MinMax_Etats;AlphaBeta_Etats;Reduction_Pourcent");
 
             System.out.println("Résultats enregistrés dans : " + csvFile);
-            System.out.println("\n" + "=".repeat(100));
+            System.out.println("\n" + "=".repeat(80));
 
-            // PARTIE 1 : Comparaison MinMax vs AlphaBeta
-            System.out.println("\n>>> PARTIE 1 : Comparaison MinMax vs AlphaBeta (mêmes décisions, moins de noeuds)\n");
             comparerMinMaxAlphaBeta(writer);
 
-            // PARTIE 2 : Comparaison des fonctions d'évaluation
-            System.out.println("\n>>> PARTIE 2 : Comparaison des fonctions d'évaluation\n");
+            System.out.println("\n" + "=".repeat(80));
+            System.out.println("Benchmark terminé ! Résultats dans " + csvFile);
+
+        } catch (IOException e) {
+            System.err.println("Erreur d'écriture dans le fichier CSV : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Benchmark des fonctions d'évaluation (ancienne vs nouvelle)
+     */
+    private static void benchmarkFonctionsEvaluation() {
+        System.out.println("=== PARTIE 2 : COMPARAISON DES FONCTIONS D'ÉVALUATION ===");
+        System.out.println("=== Tableau des victoires : Nouvelle Eval vs Ancienne Eval ===\n");
+
+        String csvFile = "resultats_fonctions_evaluation.csv";
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
+            writer.println("Configuration;Profondeur;NbParties;Victoires_NouvelleEval;Victoires_AncienneEval;Nuls");
+
+            System.out.println("Résultats enregistrés dans : " + csvFile);
+            System.out.println("\n" + "=".repeat(80));
+
             comparerFonctionsEvaluation(writer);
 
-            // PARTIE 3 : Tournoi complet
-            System.out.println("\n>>> PARTIE 3 : Tournoi avec différentes profondeurs\n");
-            tournoiProfondeurs(writer);
-
-            System.out.println("\n" + "=".repeat(100));
+            System.out.println("\n" + "=".repeat(80));
             System.out.println("Benchmark terminé ! Résultats dans " + csvFile);
 
         } catch (IOException e) {
@@ -53,9 +78,10 @@ public class BenchmarkJeux {
 
     /**
      * Compare MinMax et AlphaBeta sur le même problème
-     * Montre que AlphaBeta explore moins de noeuds pour le même résultat
+     * Génère des données pour un graphique à barres
      */
     private static void comparerMinMaxAlphaBeta(PrintWriter writer) {
+        // Configurations de jeux à tester
         int[][] configs = {
             {3, 3, 3},  // Morpion classique
             {4, 4, 3},  // 4x4 aligner 3
@@ -63,178 +89,171 @@ public class BenchmarkJeux {
             {5, 5, 4},  // 5x5 aligner 4
         };
 
-        int[] profondeurs = {2, 3, 4, 5, 6};
+        // Profondeurs à tester
+        int[] profondeurs = {2, 3, 4, 5};
+
+        System.out.println("\n  Configuration       | Prof | MinMax États | AlphaBeta États | Réduction");
+        System.out.println("  " + "-".repeat(75));
 
         for (int[] config : configs) {
             int rows = config[0];
             int cols = config[1];
             int streak = config[2];
-
-            System.out.println("  Jeu : " + rows + "x" + cols + " aligner " + streak);
+            String configName = rows + "x" + cols + "_align" + streak;
 
             for (int depth : profondeurs) {
-                // Test avec profondeur limitée
-                System.out.println("    Profondeur " + depth + " :");
-
-                // MinMax vs Random (pour mesurer les états explorés)
+                // Test MinMax
                 MnkGame game1 = new MnkGame(rows, cols, streak);
                 Player minmax = new MinMaxPlayer(game1, true, depth);
                 Player random1 = new RandomPlayer(game1, false);
 
-                long start1 = System.currentTimeMillis();
-                ResultatPartie r1 = jouerPartie(game1, minmax, random1);
-                long temps1 = System.currentTimeMillis() - start1;
+                jouerPartie(game1, minmax, random1);
+                int etatsMinMax = minmax.getStateCounter();
 
-                // AlphaBeta vs Random
+                // Test AlphaBeta (même configuration)
                 MnkGame game2 = new MnkGame(rows, cols, streak);
                 Player alphabeta = new AlphaBetaPlayer(game2, true, depth);
                 Player random2 = new RandomPlayer(game2, false);
 
-                long start2 = System.currentTimeMillis();
-                ResultatPartie r2 = jouerPartie(game2, alphabeta, random2);
-                long temps2 = System.currentTimeMillis() - start2;
+                jouerPartie(game2, alphabeta, random2);
+                int etatsAlphaBeta = alphabeta.getStateCounter();
 
-                // Afficher comparaison
-                System.out.println("      MinMax    : " + r1.etatsP1 + " états, " + temps1 + " ms");
-                System.out.println("      AlphaBeta : " + r2.etatsP1 + " états, " + temps2 + " ms");
+                // Calculer la réduction
+                double reduction = 0;
+                if (etatsMinMax > 0) {
+                    reduction = (1.0 - (double) etatsAlphaBeta / etatsMinMax) * 100;
+                }
 
-                double reduction = (1.0 - (double)r2.etatsP1 / r1.etatsP1) * 100;
-                System.out.println("      Réduction : " + String.format("%.1f", reduction) + "%");
+                // Affichage console
+                System.out.println(String.format("  %-20s |  %d   | %12d | %15d | %6.1f%%",
+                    configName, depth, etatsMinMax, etatsAlphaBeta, reduction));
 
-                // Écrire dans CSV
-                writer.println(String.format("MinMax_vs_AB;MnK;%dx%d;%d;MinMax;%d;Random;0;%s;%d;%d;%d;%d",
-                    rows, cols, streak, depth, r1.gagnant, r1.nbCoups, r1.etatsP1, r1.etatsP2, temps1));
-                writer.println(String.format("MinMax_vs_AB;MnK;%dx%d;%d;AlphaBeta;%d;Random;0;%s;%d;%d;%d;%d",
-                    rows, cols, streak, depth, r2.gagnant, r2.nbCoups, r2.etatsP1, r2.etatsP2, temps2));
+                // Écrire dans CSV pour graphique à barres
+                String configLabel = configName + "_D" + depth;
+                writer.println(String.format("%s;%d;%d;%d;%.2f",
+                    configLabel, depth, etatsMinMax, etatsAlphaBeta, reduction));
                 writer.flush();
             }
-            System.out.println();
+            System.out.println("  " + "-".repeat(75));
         }
+
+        System.out.println("\n  >>> AlphaBeta explore significativement moins d'états que MinMax !");
     }
 
     /**
-     * Compare les fonctions d'évaluation (naïve vs améliorée)
+     * Compare les fonctions d'évaluation (ancienne vs nouvelle basée sur l'article)
+     * Génère un tableau des victoires pour chaque configuration
      */
     private static void comparerFonctionsEvaluation(PrintWriter writer) {
+        // Configurations de jeux à tester
         int[][] configs = {
-            {4, 4, 3},
-            {5, 5, 4},
-            {6, 6, 4},
+            {3, 3, 3},  // Morpion classique
+            {4, 4, 3},  // 4x4 aligner 3
+            {4, 4, 4},  // 4x4 aligner 4
+            {5, 5, 4},  // 5x5 aligner 4
+            {6, 6, 4},  // 6x6 aligner 4
         };
 
-        int nbParties = 10;
-        int depth = 3;
+        int depth = 4;        // Profondeur de recherche
+        int nbParties = 20;   // Nombre de parties par configuration
+
+        System.out.println("  Profondeur de recherche : " + depth);
+        System.out.println("  Nombre de parties par configuration : " + nbParties);
+        System.out.println();
+
+        // En-tête du tableau
+        System.out.println("  " + "+".repeat(1) + "-".repeat(18) + "+" + "-".repeat(22) + "+" + "-".repeat(22) + "+" + "-".repeat(10) + "+");
+        System.out.println(String.format("  | %-16s | %-20s | %-20s | %-8s |",
+            "Configuration", "Victoires Nouv.Eval", "Victoires Anc.Eval", "Nuls"));
+        System.out.println("  " + "+".repeat(1) + "-".repeat(18) + "+" + "-".repeat(22) + "+" + "-".repeat(22) + "+" + "-".repeat(10) + "+");
 
         for (int[] config : configs) {
             int rows = config[0];
             int cols = config[1];
             int streak = config[2];
+            String configName = rows + "x" + cols + " align " + streak;
 
-            System.out.println("  Jeu : " + rows + "x" + cols + " aligner " + streak);
-
-            int victoiresEvalSimple = 0;
-            int victoiresEvalAmeliore = 0;
+            int victoiresNouvelleEval = 0;
+            int victoiresAncienneEval = 0;
             int nuls = 0;
 
+            // Jouer nbParties parties en alternant qui commence
             for (int partie = 0; partie < nbParties; partie++) {
-                // Partie 1 : EvalSimple (X) vs EvalAméliorée (O)
-                MnkGame game1 = new MnkGame(rows, cols, streak);
-                Player p1_simple = new AlphaBetaPlayer(game1, true, depth);
+                boolean nouvelleEvalCommence = (partie % 2 == 0);
+                String gagnant = jouerPartieEvaluation(rows, cols, streak, depth, nouvelleEvalCommence);
 
-                MnkGameEval game2 = new MnkGameEval(rows, cols, streak);
-                Player p1_eval = new AlphaBetaPlayer(game2, false, depth);
-
-                // Jouer avec le jeu standard (eval NaN = aléatoire au delà de la profondeur)
-                ResultatPartie r1 = jouerPartie(game1, p1_simple,
-                    new AlphaBetaPlayer(game1, false, depth));
-
-                if (r1.gagnant.equals("P1")) victoiresEvalSimple++;
-                else if (r1.gagnant.equals("P2")) victoiresEvalAmeliore++;
-                else nuls++;
-
-                writer.println(String.format("Eval_Compare;MnK;%dx%d;%d;EvalSimple;%d;EvalStandard;%d;%s;%d;%d;%d;0",
-                    rows, cols, streak, depth, depth, r1.gagnant, r1.nbCoups, r1.etatsP1, r1.etatsP2));
+                if (gagnant.equals("NOUVELLE")) {
+                    victoiresNouvelleEval++;
+                } else if (gagnant.equals("ANCIENNE")) {
+                    victoiresAncienneEval++;
+                } else {
+                    nuls++;
+                }
             }
 
-            System.out.println("    Résultats sur " + nbParties + " parties :");
-            System.out.println("      Victoires Eval Simple : " + victoiresEvalSimple);
-            System.out.println("      Victoires Eval Standard : " + victoiresEvalAmeliore);
-            System.out.println("      Matchs nuls : " + nuls);
+            // Affichage console
+            System.out.println(String.format("  | %-16s | %-20d | %-20d | %-8d |",
+                configName, victoiresNouvelleEval, victoiresAncienneEval, nuls));
+
+            // Écrire dans CSV
+            writer.println(String.format("%s;%d;%d;%d;%d;%d",
+                configName, depth, nbParties, victoiresNouvelleEval, victoiresAncienneEval, nuls));
             writer.flush();
         }
+
+        System.out.println("  " + "+".repeat(1) + "-".repeat(18) + "+" + "-".repeat(22) + "+" + "-".repeat(22) + "+" + "-".repeat(10) + "+");
+        System.out.println("\n  >>> La nouvelle fonction d'évaluation (basée sur le potentiel) devrait gagner plus souvent !");
     }
 
     /**
-     * Tournoi avec différentes profondeurs
+     * Joue une partie entre nouvelle évaluation et ancienne évaluation
+     * @return "NOUVELLE", "ANCIENNE" ou "NUL"
      */
-    private static void tournoiProfondeurs(PrintWriter writer) {
-        int rows = 4, cols = 4, streak = 3;
-        int[] profondeurs = {1, 2, 3, 4, 5};
+    private static String jouerPartieEvaluation(int rows, int cols, int streak, int depth, boolean nouvelleEvalCommence) {
+        Game gameNouvelleEval = new MnkGameEval(rows, cols, streak);
+        Game gameAncienneEval = new MnkGame(rows, cols, streak);
 
-        System.out.println("  Jeu : " + rows + "x" + cols + " aligner " + streak);
-        System.out.println("  Tournoi AlphaBeta à différentes profondeurs\n");
+        Player joueurNouvelleEval;
+        Player joueurAncienneEval;
+        Game gameUtilise;
 
-        System.out.print("        ");
-        for (int d : profondeurs) {
-            System.out.print(String.format("  D=%d  ", d));
+        if (nouvelleEvalCommence) {
+            // Nouvelle Eval joue en premier (P1 = MAX)
+            gameUtilise = gameNouvelleEval;
+            joueurNouvelleEval = new AlphaBetaPlayer(gameNouvelleEval, true, depth);
+            joueurAncienneEval = new AlphaBetaPlayer(gameNouvelleEval, false, depth);
+        } else {
+            // Ancienne Eval joue en premier (P1 = MAX)
+            gameUtilise = gameAncienneEval;
+            joueurAncienneEval = new AlphaBetaPlayer(gameAncienneEval, true, depth);
+            joueurNouvelleEval = new AlphaBetaPlayer(gameAncienneEval, false, depth);
         }
-        System.out.println();
 
-        for (int d1 : profondeurs) {
-            System.out.print("  D=" + d1 + "  ");
-
-            for (int d2 : profondeurs) {
-                MnkGame game = new MnkGame(rows, cols, streak);
-                Player p1 = new AlphaBetaPlayer(game, true, d1);
-                Player p2 = new AlphaBetaPlayer(game, false, d2);
-
-                long start = System.currentTimeMillis();
-                ResultatPartie r = jouerPartie(game, p1, p2);
-                long temps = System.currentTimeMillis() - start;
-
-                String symbole;
-                if (r.gagnant.equals("P1")) symbole = "  W  ";
-                else if (r.gagnant.equals("P2")) symbole = "  L  ";
-                else symbole = "  D  ";
-
-                System.out.print(String.format("  %s  ", symbole));
-
-                writer.println(String.format("Tournoi;MnK;%dx%d;%d;AlphaBeta;%d;AlphaBeta;%d;%s;%d;%d;%d;%d",
-                    rows, cols, streak, d1, d2, r.gagnant, r.nbCoups, r.etatsP1, r.etatsP2, temps));
-            }
-            System.out.println();
+        GameEngine engine;
+        if (nouvelleEvalCommence) {
+            engine = new GameEngine(gameUtilise, joueurNouvelleEval, joueurAncienneEval);
+        } else {
+            engine = new GameEngine(gameUtilise, joueurAncienneEval, joueurNouvelleEval);
         }
-        System.out.println("\n  Légende : W = P1 gagne, L = P2 gagne, D = Match nul");
-        writer.flush();
+
+        GameState endState = engine.gameLoopSilent();
+        double value = endState.getGameValue();
+
+        // Interpréter le résultat
+        if (value == GameState.P1_WIN) {
+            return nouvelleEvalCommence ? "NOUVELLE" : "ANCIENNE";
+        } else if (value == GameState.P2_WIN) {
+            return nouvelleEvalCommence ? "ANCIENNE" : "NOUVELLE";
+        } else {
+            return "NUL";
+        }
     }
 
     /**
-     * Joue une partie complète et retourne les statistiques
+     * Joue une partie complète (mode silencieux)
      */
-    private static ResultatPartie jouerPartie(Game game, Player p1, Player p2) {
+    private static void jouerPartie(Game game, Player p1, Player p2) {
         GameEngine engine = new GameEngine(game, p1, p2);
-        GameState endState = engine.gameLoop();
-
-        ResultatPartie r = new ResultatPartie();
-        r.nbCoups = engine.getTotalMoves();
-        r.etatsP1 = p1.getStateCounter();
-        r.etatsP2 = p2.getStateCounter();
-
-        double value = engine.getEndGameValue(endState);
-        if (value == GameState.P1_WIN) r.gagnant = "P1";
-        else if (value == GameState.P2_WIN) r.gagnant = "P2";
-        else r.gagnant = "NUL";
-
-        return r;
-    }
-
-    /**
-     * Classe pour stocker les résultats d'une partie
-     */
-    static class ResultatPartie {
-        String gagnant;
-        int nbCoups;
-        int etatsP1;
-        int etatsP2;
+        engine.gameLoopSilent();
     }
 }

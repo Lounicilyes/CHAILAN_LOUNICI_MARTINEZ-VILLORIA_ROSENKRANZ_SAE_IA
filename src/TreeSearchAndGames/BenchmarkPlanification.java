@@ -29,8 +29,9 @@ import java.util.ArrayList;
 public class BenchmarkPlanification {
 
     // Paramètres des tests
-    private static final int[] TAILLES = {100, 500, 1000, 5000, 10000, 50000, 100000};
-    private static final int[] BRANCHEMENTS = {2, 3, 5, 7, 10};
+    // CAS DIFFICILE : N=10000, K=5
+    private static final int[] TAILLES = {10000}; // N fixé à 10000
+    private static final int K_FIXE = 5; // K fixé à 5 (cas difficile)
     private static final long GRAINE = 12345L; // Pour la reproductibilité
     private static final long TIMEOUT = 60000; // 60 secondes max par test
 
@@ -38,7 +39,7 @@ public class BenchmarkPlanification {
         System.out.println("=== BENCHMARK DES ALGORITHMES DE PLANIFICATION ===\n");
 
         // Préparer le fichier CSV
-        String csvFile = "resultats_planification.csv";
+        String csvFile = "resultats_cas_difficile_N10000_K5.csv";
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
             // En-tête CSV
@@ -48,28 +49,23 @@ public class BenchmarkPlanification {
             System.out.println("\nFormat : Algorithme;N;K;Graine;Temps_ms;Noeuds_Explores;Profondeur_Max;Cout_Solution;Longueur_Solution;Succes\n");
             System.out.println("-".repeat(120));
 
-            // Tests progressifs
+            // CAS DIFFICILE : N=10000, K=5
+            int k = K_FIXE;
+            System.out.println("=== CAS DIFFICILE : N=10000, K=" + k + " ===\n");
+
             for (int n : TAILLES) {
-                for (int k : BRANCHEMENTS) {
-                    // Éviter les tests trop longs (estimation grossière)
-                    if (n > 10000 && k > 5) {
-                        System.out.println("Saut du test n=" + n + ", k=" + k + " (trop long estimé)");
-                        continue;
-                    }
+                System.out.println("\n>>> Test avec N=" + n + ", K=" + k + ", Graine=" + GRAINE);
 
-                    System.out.println("\n>>> Test avec N=" + n + ", K=" + k + ", Graine=" + GRAINE);
+                // Créer le problème
+                SearchNode.getTotalSearchNodes(); // Reset implicit
+                Dummy probleme = new Dummy(n, k, GRAINE);
+                State etatInitial = Dummy.initialState();
 
-                    // Créer le problème
-                    SearchNode.getTotalSearchNodes(); // Reset implicit
-                    Dummy probleme = new Dummy(n, k, GRAINE);
-                    State etatInitial = Dummy.initialState();
+                // Tester chaque algorithme
+                String[] algoNames = {"BFS", "DFS", "UCS", "GFS", "AStar"};
 
-                    // Tester chaque algorithme
-                    String[] algoNames = {"BFS", "DFS", "UCS", "GFS", "AStar"};
-
-                    for (String algoName : algoNames) {
-                        testAlgorithme(algoName, probleme, etatInitial, n, k, GRAINE, writer);
-                    }
+                for (String algoName : algoNames) {
+                    testAlgorithme(algoName, probleme, etatInitial, n, k, GRAINE, writer);
                 }
             }
 

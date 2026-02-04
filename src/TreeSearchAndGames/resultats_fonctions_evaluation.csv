@@ -1,0 +1,6 @@
+Configuration;Profondeur;NbParties;Victoires_NouvelleEval;Victoires_AncienneEval;Nuls
+3x3 align 3;4;20;0;10;10
+4x4 align 3;4;20;10;10;0
+4x4 align 4;4;20;0;10;10
+5x5 align 4;4;20;10;0;10
+6x6 align 4;4;20;10;10;0
